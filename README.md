@@ -66,35 +66,6 @@ Key environment variables:
 | `ERROR_CHANNEL_ID` | (Optional) channel for `ErrorNotifier` overrides |
 | `INVENTORY_SCAN_CRON` | (Optional) cron expression for nightly inventory refresh (default `0 4 * * *`) |
 
-## Command Reference
-
-### Onboarding & Account
-
-- `/onboarding start` – Launches the DM consent flow.
-- `/onboarding status` – Displays current consent state, default topics, and timestamps.
-- `/onboarding revoke` – Revokes consent and disables DM subscriptions.
-
-### Discovery & Tags
-
-- `/thread-tag source:<auto|ai|manual> [tags:<list>]` – Applies or refreshes tags for the current thread.
-- `/where query:<text>` – Searches AI tags and indexed messages, returning context-rich embeds.
-
-### Productivity
-
-- `/todo add description:<text> [assign:<@user>]` – Creates a scoped task for the current channel/thread.
-- `/todo list [status:<pending|completed|all>]` – Lists tasks with status icons and scoping hints.
-- `/todo done id:<partial or full id>` – Completes a task using full or suffix IDs.
-
-### Digests & Subscriptions
-
-- `/subscribe`, `/unsubscribe`, `/my-subscriptions`, `/digest-now`, `/help` – Existing keyword-based digest tooling.
-
-### Administration
-
-- `/admin-config highlight_channel:<#channel>` – Configures the ⭐ relay destination.
-- `/admin-config onboarding_defaults keywords:<list> [consent_version]` – Updates auto-subscribe keywords and consent version.
-- `/admin-clear-user`, `/admin-list-channels`, `/admin-remove-channel`, `/schedule`, `/unschedule`, `/stats` – Legacy admin controls.
-
 ## Highlight Relay Workflow
 
 1. A member reacts to a message with ⭐.
