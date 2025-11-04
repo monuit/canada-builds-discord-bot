@@ -1,7 +1,7 @@
 // MARK: - Stats Command
 // Admin analytics dashboard with comprehensive metrics
 
-import { ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, MessageFlags, SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 import { DigestHistory } from '../models/DigestHistory';
 import { UserSubscription } from '../models/UserSubscription';
 import { logger } from '../utils/logger';
@@ -18,7 +18,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!guildId) {
       await interaction.reply({
         content: '❌ This command can only be used in a server.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -27,13 +27,13 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
       await interaction.reply({
         content: '❌ This command requires Administrator permissions.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
 
     // Defer reply (queries can take time)
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     // Aggregate stats for different time periods
     const stats7d = await aggregateStats(guildId, 7);
@@ -150,7 +150,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     } else {
       await interaction.reply({
         content: '❌ An error occurred while fetching stats. Please try again.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
   }

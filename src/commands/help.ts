@@ -9,6 +9,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
   ComponentType,
+  MessageFlags,
 } from 'discord.js';
 import { logger } from '../utils/logger';
 
@@ -26,7 +27,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     const message = await interaction.reply({
       embeds: [pages[currentPage]],
       components: [createNavigationRow(currentPage, pages.length)],
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
       fetchReply: true,
     });
 
@@ -41,7 +42,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
       if (buttonInteraction.user.id !== interaction.user.id) {
         await buttonInteraction.reply({
           content: '❌ This help menu is not for you. Use `/help` to open your own.',
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
@@ -93,7 +94,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
     await interaction.reply({
       content: '❌ An error occurred while loading help. Please try again.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 }

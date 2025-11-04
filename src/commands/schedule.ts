@@ -1,7 +1,7 @@
 // MARK: - Schedule Command
 // Admin setup scheduled digests with cron
 
-import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 import { isValidCron } from 'cron-validator';
 import parser from 'cron-parser';
 import { DigestConfig } from '../models/DigestConfig';
@@ -38,7 +38,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!guildId) {
       await interaction.reply({
         content: '❌ This command can only be used in a server.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -47,7 +47,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
       await interaction.reply({
         content: '❌ This command requires Administrator permissions.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -63,7 +63,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
       await interaction.reply({
         content:
           '❌ Server configuration not found. Please ensure the bot is properly initialized.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -79,7 +79,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
       await interaction.reply({
         content: '✅ **Scheduled Digests Disabled**\n\nAutomatic digest delivery has been turned off.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -98,7 +98,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
           `• \`0 */6 * * *\` - Every 6 hours\n` +
           `• \`0 9 * * 1-5\` - Weekdays at 9:00 AM\n` +
           `• \`0 9,17 * * *\` - Daily at 9 AM and 5 PM`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -116,7 +116,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
           `• \`America/New_York\`\n` +
           `• \`Europe/London\`\n` +
           `• \`Asia/Tokyo\``,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -153,7 +153,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
         `**Timezone**: ${timezone}\n` +
         `**Next Run**: ${nextRunStr}\n\n` +
         `All subscribed users will receive automatic digests based on this schedule.`,
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
 
   } catch (error: any) {
@@ -164,7 +164,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
     await interaction.reply({
       content: '❌ An error occurred while configuring the schedule. Please try again.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 }

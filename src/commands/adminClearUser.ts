@@ -1,7 +1,7 @@
 // MARK: - Admin Clear User Command
 // Admin remove all subscriptions for a user
 
-import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 import { UserSubscription } from '../models/UserSubscription';
 import { messageIndexer } from '../services/MessageIndexer';
 import { logger } from '../utils/logger';
@@ -24,7 +24,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!guildId) {
       await interaction.reply({
         content: '❌ This command can only be used in a server.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -33,7 +33,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
       await interaction.reply({
         content: '❌ This command requires Administrator permissions.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -47,7 +47,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!subscription) {
       await interaction.reply({
         content: `⚠️ User ${targetUser.tag} has no active subscriptions.`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -74,7 +74,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
         `**User**: ${targetUser.tag}\n` +
         `**Cleared Keywords**: ${clearedKeywords.join(', ')}\n\n` +
         `All subscriptions for this user have been removed.`,
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
 
   } catch (error: any) {
@@ -85,7 +85,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
     await interaction.reply({
       content: '❌ An error occurred while clearing user subscriptions. Please try again.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 }

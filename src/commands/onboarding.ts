@@ -44,7 +44,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
     await interaction.reply({
       content: response.content,
-      flags: response.ephemeral ? MessageFlags.Ephemeral : undefined,
+      flags: response.flags,
     });
   } catch (error: any) {
     logger.error('Onboarding command failed', {

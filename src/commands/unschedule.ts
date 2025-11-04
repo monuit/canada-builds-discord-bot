@@ -1,7 +1,7 @@
 // MARK: - Unschedule Command
 // Admin disable scheduled digests
 
-import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 import { DigestConfig } from '../models/DigestConfig';
 import { cronManager } from '../services/CronManager';
 import { logger } from '../utils/logger';
@@ -18,7 +18,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!guildId) {
       await interaction.reply({
         content: '❌ This command can only be used in a server.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -27,7 +27,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
       await interaction.reply({
         content: '❌ This command requires Administrator permissions.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -38,7 +38,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!config) {
       await interaction.reply({
         content: '❌ Server configuration not found.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -47,7 +47,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!config.schedule.enabled) {
       await interaction.reply({
         content: '⚠️ Scheduled digests are already disabled.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -70,7 +70,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
         `Automatic digest delivery has been turned off.\n\n` +
         `Users can still use \`/digest-now\` for manual digests.\n` +
         `Use \`/schedule\` to re-enable automatic delivery.`,
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
 
   } catch (error: any) {
@@ -81,7 +81,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
     await interaction.reply({
       content: '❌ An error occurred while disabling the schedule. Please try again.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 }

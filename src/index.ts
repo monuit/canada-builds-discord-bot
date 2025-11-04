@@ -2,7 +2,7 @@
 // Discord bot initialization and event handling
 
 import 'dotenv/config';
-import { ButtonInteraction, Client, Events, GatewayIntentBits, Partials, REST, Routes, StringSelectMenuInteraction } from 'discord.js';
+import { ButtonInteraction, Client, Events, GatewayIntentBits, MessageFlags, Partials, REST, Routes, StringSelectMenuInteraction } from 'discord.js';
 import mongoose from 'mongoose';
 import { messageIndexer } from './services/MessageIndexer';
 import { digestGenerator } from './services/DigestGenerator';
@@ -16,8 +16,10 @@ import { bookmarkRelayService } from './services/BookmarkRelayService';
 import { guildFeatureConfigService } from './services/GuildFeatureConfigService';
 import { topicService } from './services/TopicService';
 import { guildInventoryService } from './services/GuildInventoryService';
+import { presenceManager } from './services/PresenceManager';
+import { reminderService } from './services/ReminderService';
 import { initializeHealthServer, startHealthServer, stopHealthServer, metrics } from './health';
-import { commands, handlers } from './commands';
+import { autocompleteHandlers, commands, handlers } from './commands';
 import { handleCompletionSelect } from './commands/todo';
 import { logger } from './utils/logger';
 
@@ -26,6 +28,10 @@ const TOKEN = process.env.DISCORD_TOKEN!;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
 const GUILD_ID = process.env.DISCORD_GUILD_ID!;
 const MONGODB_URI = process.env.MONGODB_URI!;
+const OWNER_IDS: string[] = (process.env.DISCORD_OWNER_IDS ?? '')
+  .split(',')
+  .map(id => id.trim())
+  .filter(id => id.length > 0);
 
 // Validate required environment variables
 if (!TOKEN || !CLIENT_ID || !GUILD_ID || !MONGODB_URI) {
@@ -134,6 +140,12 @@ client.once(Events.ClientReady, async (readyClient) => {
     await guildInventoryService.initialize(client, GUILD_ID);
     logger.info('✓ GuildInventoryService initialized');
 
+    presenceManager.initialize(client, GUILD_ID);
+    logger.info('✓ PresenceManager initialized');
+
+    reminderService.initialize(client);
+    logger.info('✓ ReminderService initialized');
+
     await onboardingManager.resumePendingSessions(GUILD_ID);
 
     await cronManager.initialize();
@@ -201,6 +213,36 @@ client.on(Events.MessageCreate, async (message) => {
 
 // MARK: - Event: Interaction Create
 client.on(Events.InteractionCreate, async (interaction) => {
+  if (interaction.isAutocomplete()) {
+    const handler = autocompleteHandlers.get(interaction.commandName);
+
+    if (!handler) {
+      await interaction.respond([]);
+      return;
+    }
+
+    try {
+      await handler(interaction);
+    } catch (error: any) {
+      logger.error('Autocomplete execution failed', {
+        commandName: interaction.commandName,
+        userId: interaction.user.id,
+        error: error.message,
+      });
+
+      try {
+        await interaction.respond([]);
+      } catch (respondError: any) {
+        logger.warn('Failed to respond to autocomplete fallback', {
+          commandName: interaction.commandName,
+          error: respondError.message,
+        });
+      }
+    }
+
+    return;
+  }
+
   if (interaction.isButton() || interaction.isStringSelectMenu()) {
     const handled = await onboardingManager.handleComponentInteraction(
       interaction as ButtonInteraction | StringSelectMenuInteraction,
@@ -226,7 +268,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     logger.warn('Unknown command', { commandName });
     await interaction.reply({
       content: '❌ Unknown command.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
     return;
   }
@@ -234,10 +276,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
   // Check permissions for admin commands
   const adminCommands = ['admin-clear-user', 'admin-remove-channel', 'admin-list-channels', 'admin-config', 'admin-topics'];
   if (adminCommands.includes(commandName)) {
-    if (!interaction.memberPermissions?.has('Administrator')) {
+    const isOwnerOverride = OWNER_IDS.includes(interaction.user.id);
+    if (!isOwnerOverride && !interaction.memberPermissions?.has('Administrator')) {
       await interaction.reply({
         content: '❌ You need Administrator permissions to use this command.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -266,12 +309,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
     } else if (interaction.replied) {
       await interaction.followUp({
         content: errorMessage,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     } else {
       await interaction.reply({
         content: errorMessage,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -354,6 +397,12 @@ async function shutdown(signal: string): Promise<void> {
 
     guildInventoryService.shutdown();
     logger.info('✓ Guild inventory scheduler stopped');
+
+    presenceManager.shutdown();
+    logger.info('✓ Presence manager stopped');
+
+    reminderService.shutdown();
+    logger.info('✓ Reminder service stopped');
 
     // Destroy Discord client
     client.destroy();

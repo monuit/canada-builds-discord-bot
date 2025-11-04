@@ -1,10 +1,11 @@
 // MARK: - Subscribe Command
 // User subscribes to keywords with cooldown and DM preferences
 
-import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { UserSubscription } from '../models/UserSubscription';
 import { messageIndexer } from '../services/MessageIndexer';
 import { logger } from '../utils/logger';
+import { editEphemeral, replyEphemeral } from '../utils/interactionCleanup';
 
 const MAX_KEYWORDS = 20;
 const MIN_COOLDOWN = 1;
@@ -42,9 +43,8 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     const userId = interaction.user.id;
 
     if (!guildId) {
-      await interaction.reply({
+      await replyEphemeral(interaction, {
         content: '❌ This command can only be used in a server.',
-        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -55,35 +55,31 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
       .filter(keyword => keyword.length > 0);
 
     if (keywords.length === 0) {
-      await interaction.reply({
+      await replyEphemeral(interaction, {
         content: '❌ Please provide at least one keyword.',
-        flags: MessageFlags.Ephemeral,
       });
       return;
     }
 
     if (keywords.length > MAX_KEYWORDS) {
-      await interaction.reply({
+      await replyEphemeral(interaction, {
         content: `❌ Maximum ${MAX_KEYWORDS} keywords allowed. You provided ${keywords.length}.`,
-        flags: MessageFlags.Ephemeral,
       });
       return;
     }
 
     const uniqueKeywords = [...new Set(keywords)];
     if (uniqueKeywords.length !== keywords.length) {
-      await interaction.reply({
+      await replyEphemeral(interaction, {
         content: '❌ Duplicate keywords detected. Please provide unique keywords only.',
-        flags: MessageFlags.Ephemeral,
       });
       return;
     }
 
     const invalidKeywords = uniqueKeywords.filter(keyword => keyword.length < 2 || keyword.length > 50);
     if (invalidKeywords.length > 0) {
-      await interaction.reply({
+      await replyEphemeral(interaction, {
         content: `❌ Keywords must be 2-50 characters. Invalid: ${invalidKeywords.join(', ')}`,
-        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -97,9 +93,8 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     const mergedKeywords = Array.from(new Set([...existingKeywords, ...uniqueKeywords]));
 
     if (mergedKeywords.length > MAX_KEYWORDS) {
-      await interaction.reply({
+      await replyEphemeral(interaction, {
         content: `❌ Adding those keywords would exceed the maximum of ${MAX_KEYWORDS}. You currently have ${existingKeywords.length} and tried to add ${uniqueKeywords.length}.`,
-        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -134,7 +129,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
       dmEnabled,
     });
 
-    await interaction.reply({
+    await replyEphemeral(interaction, {
       content:
         `✅ **Subscription Updated**\n\n` +
         `**Keywords**: ${mergedKeywords.join(', ')}\n` +
@@ -143,7 +138,6 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
         `**DM Notifications**: ${dmEnabled ? 'Enabled ✓' : 'Disabled ✗'}\n\n` +
         `🔔 You'll receive your next digest around **${nextDigestStr}** (or use \`/digest-now\` for an instant update).\n\n` +
         `💡 **Tip**: Existing keywords are preserved automatically. Use \`/unsubscribe\` to remove any you no longer need.`,
-      flags: MessageFlags.Ephemeral,
     });
 
   } catch (error: any) {
@@ -152,22 +146,18 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
       error: error.message,
     });
 
-    if (interaction.replied || interaction.deferred) {
+    const payload = {
+      content: '❌ An unexpected error occurred while updating your subscription. Please try again.',
+    } as const;
+
+    if (interaction.deferred || interaction.replied) {
       try {
-        await interaction.followUp({
-          content: '❌ An unexpected error occurred while updating your subscription. Please try again.',
-          flags: MessageFlags.Ephemeral,
-        });
+        await editEphemeral(interaction, payload);
       } catch {
-        await interaction.editReply({
-          content: '❌ An unexpected error occurred while updating your subscription. Please try again.',
-        }).catch(() => undefined);
+        // noop: interaction may already be cleaned up
       }
     } else {
-      await interaction.reply({
-        content: '❌ An unexpected error occurred while updating your subscription. Please try again.',
-        flags: MessageFlags.Ephemeral,
-      });
+      await replyEphemeral(interaction, payload);
     }
   }
 }

@@ -1,7 +1,7 @@
 // MARK: - Admin Remove Channel Command
 // Admin exclude channel from indexing
 
-import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits, ChannelType } from 'discord.js';
+import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder, PermissionFlagsBits, ChannelType } from 'discord.js';
 import { DigestConfig } from '../models/DigestConfig';
 import { Webhook } from '../models/Webhook';
 import { messageIndexer } from '../services/MessageIndexer';
@@ -26,7 +26,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!guildId) {
       await interaction.reply({
         content: '❌ This command can only be used in a server.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -35,7 +35,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
       await interaction.reply({
         content: '❌ This command requires Administrator permissions.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -49,7 +49,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!config) {
       await interaction.reply({
         content: '❌ Server configuration not found.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -58,7 +58,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (config.excludedChannelIds.includes(channelId)) {
       await interaction.reply({
         content: `⚠️ Channel <#${channelId}> is already excluded from indexing.`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -86,7 +86,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
         `**Channel**: <#${channelId}>\n\n` +
         `Messages from this channel will no longer be indexed.\n` +
         `Existing messages from this channel remain in the database but won't appear in future digests.`,
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
 
   } catch (error: any) {
@@ -97,7 +97,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
     await interaction.reply({
       content: '❌ An error occurred while excluding the channel. Please try again.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 }

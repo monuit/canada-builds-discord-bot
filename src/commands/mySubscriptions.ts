@@ -1,7 +1,7 @@
 // MARK: - My Subscriptions Command
 // List user's current subscriptions with status
 
-import { ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { UserSubscription, IUserSubscription } from '../models/UserSubscription';
 import { logger } from '../utils/logger';
 
@@ -17,7 +17,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!guildId) {
       await interaction.reply({
         content: '❌ This command can only be used in a server.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -40,7 +40,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
         .setColor(0x95A5A6) // Gray
         .setTimestamp();
 
-      await interaction.reply({ embeds: [embed], ephemeral: true });
+      await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -120,7 +120,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
       keywordCount: subscription.keywords.length,
     });
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
 
   } catch (error: any) {
     logger.error('My-subscriptions command failed', {
@@ -130,7 +130,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
     await interaction.reply({
       content: '❌ An error occurred while fetching your subscriptions. Please try again.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 }

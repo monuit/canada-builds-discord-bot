@@ -1,7 +1,7 @@
 // MARK: - Admin List Channels Command
 // Admin view configuration and stats
 
-import { ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, MessageFlags, SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 import { DigestConfig } from '../models/DigestConfig';
 import { UserSubscription } from '../models/UserSubscription';
 import { messageIndexer } from '../services/MessageIndexer';
@@ -19,7 +19,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!guildId) {
       await interaction.reply({
         content: '❌ This command can only be used in a server.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -28,7 +28,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
       await interaction.reply({
         content: '❌ This command requires Administrator permissions.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -39,7 +39,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     if (!config) {
       await interaction.reply({
         content: '❌ Server configuration not found.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -129,7 +129,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
       guildId,
     });
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
 
   } catch (error: any) {
     logger.error('Admin list channels command failed', {
@@ -139,7 +139,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
     await interaction.reply({
       content: '❌ An error occurred while fetching configuration. Please try again.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 }
