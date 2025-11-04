@@ -1,11 +1,12 @@
 // MARK: - Digest Now Command
 // Generate instant digest ignoring cooldown
 
-import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { UserSubscription } from '../models/UserSubscription';
 import { digestGenerator } from '../services/DigestGenerator';
 import { DigestHistory } from '../models/DigestHistory';
 import { logger } from '../utils/logger';
+import { editEphemeral, replyEphemeral } from '../utils/interactionCleanup';
 
 const MIN_HOURS = 1;
 const MAX_HOURS = 168;
@@ -29,9 +30,8 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     const userId = interaction.user.id;
 
     if (!guildId) {
-      await interaction.reply({
+      await replyEphemeral(interaction, {
         content: '❌ This command can only be used in a server.',
-        ephemeral: true,
       });
       return;
     }
@@ -40,27 +40,25 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     const subscription = await UserSubscription.findOne({ userId, guildId });
 
     if (!subscription) {
-      await interaction.reply({
-        content:
-          `❌ You have no active subscriptions.\n\n` +
-          `Use \`/subscribe keywords:rust,web3\` to get started.`,
-        ephemeral: true,
-      });
+        await replyEphemeral(interaction, {
+          content:
+            `❌ You have no active subscriptions.\n\n` +
+            `Use \`/subscribe keywords:rust,web3\` to get started.`,
+        });
       return;
     }
 
     if (subscription.keywords.length === 0) {
-      await interaction.reply({
+      await replyEphemeral(interaction, {
         content:
           `❌ You have no keywords subscribed.\n\n` +
           `Use \`/subscribe\` to add keywords.`,
-        ephemeral: true,
       });
       return;
     }
 
     // Defer reply (digest generation can take time)
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     logger.info('Digest now requested', {
       userId,
@@ -79,7 +77,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
     // Check if any messages found
     if (digest.stats.messageCount === 0) {
-      await interaction.editReply({
+      await editEphemeral(interaction, {
         content:
           `📭 **No New Messages**\n\n` +
           `No messages found matching your keywords in the last ${hours} hour${hours === 1 ? '' : 's'}.\n\n` +
@@ -122,7 +120,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
       });
 
       // Update reply with success
-      await interaction.editReply({
+      await editEphemeral(interaction, {
         content:
           `✅ **Digest Delivered**\n\n` +
           `📊 **Stats**:\n` +
@@ -143,7 +141,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     } catch (dmError: any) {
       // Handle DM failure
       if (dmError.code === 50007) {
-        await interaction.editReply({
+        await editEphemeral(interaction, {
           content:
             `❌ **Cannot Send DM**\n\n` +
             `Your DMs are closed. Please enable DMs from server members to receive digests.\n\n` +
@@ -164,15 +162,14 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     });
 
     // Check if already replied
-    if (interaction.deferred) {
-      await interaction.editReply({
-        content: '❌ An error occurred while generating your digest. Please try again.',
-      });
+    const payload = {
+      content: '❌ An error occurred while generating your digest. Please try again.',
+    } as const;
+
+    if (interaction.deferred || interaction.replied) {
+      await editEphemeral(interaction, payload);
     } else {
-      await interaction.reply({
-        content: '❌ An error occurred while generating your digest. Please try again.',
-        ephemeral: true,
-      });
+      await replyEphemeral(interaction, payload);
     }
   }
 }

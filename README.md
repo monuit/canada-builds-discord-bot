@@ -19,10 +19,11 @@ AI-powered community assistant for Build Canada. It combines personalized digest
    - `Server Members`
    - `Message Content`
    - `Guild Message Reactions`
-2. Under **OAuth2 → URL Generator** include scopes `bot` and `applications.commands`.
+2. Under **OAuth2 → URL Generator** include scopes `bot` and `applications.commands`. Use [/add me](https://discord.com/oauth2/authorize?client_id=1434775201433780236&permissions=275414846528&integration_type=0&scope=bot+applications.commands) for a preconfigured invite.
 3. Required permissions when inviting the bot:
    - `View Channels`
    - `Send Messages`
+   - `Send Messages in Threads`
    - `Manage Webhooks`
    - `Add Reactions`
    - `Manage Threads`
@@ -54,6 +55,17 @@ npm run dev
 npm run build
 ```
 
+### Docker Compose
+
+Run the bot and MongoDB locally with a single command:
+
+```bash
+cp .env.example .env            # populate Discord + OpenAI secrets
+docker compose up --build       # starts bot + mongo:6 locally
+```
+
+The compose stack exposes port `3000` for health checks and maps MongoDB to `localhost:27017`. Update `MONGODB_URI` in `.env` if you change the database name or credentials.
+
 Key environment variables:
 
 | Variable | Description |
@@ -61,6 +73,7 @@ Key environment variables:
 | `DISCORD_TOKEN` | Discord bot token |
 | `DISCORD_CLIENT_ID` | Application/client ID |
 | `DISCORD_GUILD_ID` | Default guild for command registration |
+| `DISCORD_OWNER_IDS` | Comma-separated user IDs that bypass admin permission checks |
 | `MONGODB_URI` | MongoDB connection string |
 | `OPENAI_API_KEY` | OpenAI API key |
 | `ERROR_CHANNEL_ID` | (Optional) channel for `ErrorNotifier` overrides |
@@ -119,6 +132,7 @@ npm run typecheck
 npm run lint
 
 # Unit tests (Vitest)
+npm test
 
 ```
 

@@ -1,13 +1,15 @@
 // MARK: - Commands Index
 // Export command builders and handlers
 
-import { ChatInputCommandInteraction } from 'discord.js';
+import { AutocompleteInteraction, ChatInputCommandInteraction } from 'discord.js';
 
 // Import all command modules
 import * as subscribe from './subscribe';
 import * as unsubscribe from './unsubscribe';
 import * as mySubscriptions from './mySubscriptions';
 import * as digestNow from './digestNow';
+import * as ping from './ping';
+import * as botInfo from './botInfo';
 import * as help from './help';
 import * as stats from './stats';
 import * as schedule from './schedule';
@@ -22,9 +24,13 @@ import * as todo from './todo';
 import * as adminConfig from './adminConfig';
 import * as adminTopics from './adminTopics';
 import * as adminChannelWeight from './adminChannelWeight';
+import * as topics from './topics';
+import * as digestHistory from './digestHistory';
+import * as remind from './remind';
 
 // Type definition for command handlers
 export type CommandHandler = (interaction: ChatInputCommandInteraction) => Promise<void>;
+export type AutocompleteHandler = (interaction: AutocompleteInteraction) => Promise<void>;
 
 // Export commands array for deployment
 export const commands: any[] = [
@@ -32,6 +38,8 @@ export const commands: any[] = [
   unsubscribe.data.toJSON(),
   mySubscriptions.data.toJSON(),
   digestNow.data.toJSON(),
+  ping.data.toJSON(),
+  botInfo.data.toJSON(),
   help.data.toJSON(),
   stats.data.toJSON(),
   schedule.data.toJSON(),
@@ -46,6 +54,9 @@ export const commands: any[] = [
   adminConfig.data.toJSON(),
   adminTopics.data.toJSON(),
   adminChannelWeight.data.toJSON(),
+  topics.data.toJSON(),
+  digestHistory.data.toJSON(),
+  remind.data.toJSON(),
 ];
 
 // Export handlers map for execution
@@ -54,6 +65,8 @@ export const handlers = new Map<string, CommandHandler>([
   ['unsubscribe', unsubscribe.execute],
   ['my-subscriptions', mySubscriptions.execute],
   ['digest-now', digestNow.execute],
+  ['ping', ping.execute],
+  ['botinfo', botInfo.execute],
   ['help', help.execute],
   ['stats', stats.execute],
   ['schedule', schedule.execute],
@@ -68,6 +81,14 @@ export const handlers = new Map<string, CommandHandler>([
   ['admin-config', adminConfig.execute],
   ['admin-topics', adminTopics.execute],
   ['admin-channel-weight', adminChannelWeight.execute],
+  ['topics', topics.execute],
+  ['digest-history', digestHistory.execute],
+  ['remind', remind.execute],
+]);
+
+// Export autocomplete handlers map for slash command options
+export const autocompleteHandlers = new Map<string, AutocompleteHandler>([
+  ['unsubscribe', unsubscribe.autocomplete],
 ]);
 
 /**
