@@ -27,7 +27,7 @@ import { logger } from './utils/logger';
 const TOKEN = process.env.DISCORD_TOKEN!;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
 const GUILD_ID = process.env.DISCORD_GUILD_ID!;
-const MONGODB_URI = process.env.MONGODB_URI!;
+const MONGODB_URI = process.env.MONGODB_URI ?? process.env.MONGO_URL ?? '';
 const OWNER_IDS: string[] = (process.env.DISCORD_OWNER_IDS ?? '')
   .split(',')
   .map(id => id.trim())
@@ -40,6 +40,10 @@ if (!TOKEN || !CLIENT_ID || !GUILD_ID || !MONGODB_URI) {
     hasClientId: !!CLIENT_ID,
     hasGuildId: !!GUILD_ID,
     hasMongoUri: !!MONGODB_URI,
+    envKeys: {
+      hasMongodbUri: typeof process.env.MONGODB_URI === 'string',
+      hasMongoUrl: typeof process.env.MONGO_URL === 'string',
+    },
   });
   process.exit(1);
 }
