@@ -21,6 +21,13 @@ export interface TopicOption {
   bigrams?: string[];
 }
 
+export interface TrendingTopicPreview {
+  label: string;
+  mentions: number;
+  topChannels: Array<{ channelId: string; name?: string }>;
+  lastMentionAt?: Date;
+}
+
 export interface ConsentPrompt {
   embed: EmbedBuilder;
   components: ActionRowBuilder<ButtonBuilder>[];
@@ -77,6 +84,7 @@ export class OnboardingPromptBuilder {
     defaults: OnboardingDefaults,
     sessionId: string,
     topics: TopicOption[] = [],
+    trending: TrendingTopicPreview[] = [],
   ): TopicPrompt {
     const select = new StringSelectMenuBuilder()
       .setCustomId(`onboarding:topics:${sessionId}`)
@@ -95,11 +103,16 @@ export class OnboardingPromptBuilder {
     const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
 
     const topicDetails = OnboardingPromptBuilder.buildTopicDetails(merged);
+    const trendingDetails = OnboardingPromptBuilder.buildTrendingDetails(trending);
+
+    const messageSections = [
+      '✅ Thanks for consenting! Choose the topics that matter to you (or skip to stay unsubscribed).',
+      trendingDetails,
+      topicDetails,
+    ].filter(section => section && section.trim().length > 0);
 
     return {
-      content:
-        '✅ Thanks for consenting! Choose the topics that matter to you (or skip to stay unsubscribed).' +
-        (topicDetails ? `\n\n${topicDetails}` : ''),
+      content: messageSections.join('\n\n'),
       components: [row],
     };
   }
@@ -111,8 +124,10 @@ export class OnboardingPromptBuilder {
       .addOptions(
         { label: 'Daily – Morning (09:00 EST)', value: 'daily-morning' },
         { label: 'Daily – Evening (20:00 EST)', value: 'daily-evening' },
-        { label: 'Twice Weekly (Mon/Thu at 18:00 EST)', value: 'twice-weekly' },
-        { label: 'Weekly Recap (Monday 15:00 EST)', value: 'weekly' },
+        { label: 'Twice Weekly (Mon & Thu at 18:00 EST)', value: 'twice-weekly' },
+        { label: 'Twice Weekly (Tues & Fri at 18:00 EST)', value: 'twice-weekly-tues-fri' },
+        { label: 'Weekly Recap (Monday at 15:00 EST)', value: 'weekly' },
+        { label: 'Weekly Recap (Friday at 15:00 EST)', value: 'weekly-friday' },
         { label: 'Manual only (no automatic DMs)', value: 'manual' },
       );
 
@@ -154,5 +169,29 @@ export class OnboardingPromptBuilder {
     }
 
     return `📘 What you're signing up for:\n${lines.join('\n')}`;
+  }
+
+  private static buildTrendingDetails(trending: TrendingTopicPreview[]): string {
+    if (!trending || trending.length === 0) {
+      return '';
+    }
+
+    const lines = trending.map(item => {
+      const relative = item.lastMentionAt
+        ? `<t:${Math.floor(item.lastMentionAt.getTime() / 1000)}:R>`
+        : 'recently';
+      const channelSummary = item.topChannels.length > 0
+        ? item.topChannels.map(channel => {
+          if (channel.name) {
+            return `#${channel.name}`;
+          }
+          return `<#${channel.channelId}>`;
+        }).join(', ')
+        : 'multiple channels';
+
+      return `• **${item.label}** – ${item.mentions} hits (last ${relative}) in ${channelSummary}`;
+    });
+
+    return `🔥 Trending now:\n${lines.join('\n')}`;
   }
 }

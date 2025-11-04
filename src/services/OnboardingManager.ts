@@ -6,6 +6,7 @@ import {
   ButtonInteraction,
   Client,
   GuildMember,
+  MessageFlags,
   StringSelectMenuInteraction,
 } from 'discord.js';
 import { ConsentLedger, IConsentLedger } from '../models/ConsentLedger';
@@ -16,11 +17,12 @@ import { guildFeatureConfigService } from './GuildFeatureConfigService';
 import { messageIndexer } from './MessageIndexer';
 import { logger } from '../utils/logger';
 import { errorNotifier } from './ErrorNotifier';
-import { OnboardingPromptBuilder, ConsentPrompt } from './onboarding/OnboardingPromptBuilder';
+import { OnboardingPromptBuilder, ConsentPrompt, TrendingTopicPreview } from './onboarding/OnboardingPromptBuilder';
 import { OnboardingStatusFormatter } from './onboarding/OnboardingStatusFormatter';
 import { topicService } from './TopicService';
 import { buildScheduleConfirmation, resolveScheduleOption } from './onboarding/OnboardingSchedule';
 import { onboardingSubscriptionService } from './onboarding/OnboardingSubscriptionService';
+import { topicTrendService } from './TopicTrendService';
 
 const SESSION_TTL_HOURS = 24;
 const DEFAULT_TIMEZONE = 'UTC';
@@ -30,6 +32,8 @@ type LedgerSnapshot = {
   consentedAt?: Date;
   revokedAt?: Date;
 };
+
+type EphemeralFlag = typeof MessageFlags.Ephemeral;
 
 class OnboardingManager {
   private client: Client | null = null;
@@ -85,7 +89,7 @@ class OnboardingManager {
     guildId: string,
     userId: string,
     action: 'start' | 'status' | 'revoke',
-  ): Promise<{ content: string; ephemeral?: boolean }> {
+  ): Promise<{ content: string; flags?: EphemeralFlag }> {
     await guildFeatureConfigService.initialize(guildId);
 
     const defaults = guildFeatureConfigService.getOnboardingDefaults(guildId);
@@ -102,28 +106,28 @@ class OnboardingManager {
       if (ledger.status === 'revoked') {
         return {
           content: '⚠️ Your consent is already revoked. Use `/onboarding start` if you wish to rejoin.',
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         };
       }
 
       await this.revokeConsent(ledger);
       return {
         content: '✅ Consent revoked. DM notifications and auto-subscriptions are disabled.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       };
     }
 
     if (ledger.status === 'consented') {
       return {
         content: '✅ You are already onboarded. Use `/onboarding status` for details or `/onboarding revoke` to opt out.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       };
     }
 
     await this.startOnboardingFlow(guildId, userId, 'command');
     return {
       content: '✉️ Check your DMs for the onboarding flow. If DMs are closed, open them and run `/onboarding start` again.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     };
   }
 
@@ -138,7 +142,7 @@ class OnboardingManager {
     if (!session || session.status !== 'pending') {
       await interaction.reply({
         content: '⚠️ This onboarding session is no longer active. Please run `/onboarding start` again.',
-        ephemeral: interaction.inGuild(),
+        flags: interaction.inGuild() ? MessageFlags.Ephemeral : undefined,
       });
       return true;
     }
@@ -261,7 +265,7 @@ class OnboardingManager {
     session: IOnboardingSession,
     accepted: boolean,
   ): Promise<void> {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const ledger = await ConsentLedger.findOne({ guildId: session.guildId, userId: session.userId });
 
@@ -324,7 +328,29 @@ class OnboardingManager {
       keywords: topic.keywords ?? [],
       bigrams: topic.bigrams ?? [],
     }));
-    const prompt = OnboardingPromptBuilder.buildTopicPrompt(defaults, session.sessionId, topicOptions);
+
+    let trendingPreview: TrendingTopicPreview[] = [];
+    try {
+      const trends = await topicTrendService.getTrendingTopics(session.guildId, { limit: 3, windowHours: 72, minMentions: 1 });
+      trendingPreview = trends.topics.map(trend => ({
+        label: trend.label,
+        mentions: trend.totalMentions,
+        topChannels: trend.topChannels.map(channel => ({ channelId: channel.channelId, name: channel.name })),
+        lastMentionAt: trend.lastMentionAt,
+      }));
+    } catch (error: any) {
+      logger.debug('Unable to fetch trending topics for onboarding prompt', {
+        guildId: session.guildId,
+        error: error.message,
+      });
+    }
+
+    const prompt = OnboardingPromptBuilder.buildTopicPrompt(
+      defaults,
+      session.sessionId,
+      topicOptions,
+      trendingPreview,
+    );
 
     await interaction.editReply({
       content: prompt.content,
@@ -343,7 +369,7 @@ class OnboardingManager {
     if (!ledger) {
       await interaction.reply({
         content: '⚠️ Session expired. Please run `/onboarding start` again.',
-        ephemeral: interaction.inGuild(),
+        flags: interaction.inGuild() ? MessageFlags.Ephemeral : undefined,
       });
       return;
     }
@@ -405,7 +431,7 @@ class OnboardingManager {
     if (!ledger) {
       await interaction.reply({
         content: '⚠️ Session expired. Please run `/onboarding start` again.',
-        ephemeral: interaction.inGuild(),
+        flags: interaction.inGuild() ? MessageFlags.Ephemeral : undefined,
       });
       return;
     }

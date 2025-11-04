@@ -1,10 +1,11 @@
 // MARK: - Onboarding Status Formatter
 // Presents consent ledger status summaries
 
+import { MessageFlags } from 'discord.js';
 import { IConsentLedger } from '../../models/ConsentLedger';
 
 export class OnboardingStatusFormatter {
-  static format(ledger: IConsentLedger): { content: string; ephemeral: boolean } {
+  static format(ledger: IConsentLedger): { content: string; flags: typeof MessageFlags.Ephemeral } {
     const statusEmoji = ledger.status === 'consented' ? '✅' : ledger.status === 'pending' ? '⏳' : '🚫';
 
     const consentedAt = ledger.consentedAt
@@ -26,7 +27,7 @@ export class OnboardingStatusFormatter {
         `• Revoked: ${revokedAt}\n` +
         `• Default topics: ${keywords}\n\n` +
         'Use `/onboarding revoke` to opt out or `/subscribe` to manage keywords.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     };
   }
 }

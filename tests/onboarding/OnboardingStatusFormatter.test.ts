@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MessageFlags } from 'discord.js';
 import { OnboardingStatusFormatter } from '../../src/services/onboarding/OnboardingStatusFormatter';
 import { IConsentLedger } from '../../src/models/ConsentLedger';
 
@@ -21,7 +22,7 @@ describe('OnboardingStatusFormatter', () => {
 
     const status = OnboardingStatusFormatter.format(ledger);
 
-    expect(status.ephemeral).toBe(true);
+    expect(status.flags).toBe(MessageFlags.Ephemeral);
     expect(status.content).toContain('✅');
     expect(status.content).toContain('ai');
   });
@@ -32,6 +33,7 @@ describe('OnboardingStatusFormatter', () => {
 
     const status = OnboardingStatusFormatter.format(ledger);
 
+    expect(status.flags).toBe(MessageFlags.Ephemeral);
     expect(status.content).toContain('🚫');
     expect(status.content).toContain('none');
   });
