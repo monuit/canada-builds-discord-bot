@@ -13,7 +13,14 @@ export interface IUserSubscription extends Document {
   preferences: {
     timezone?: string;
     digestHourUTC?: number;
-    digestPreference?: 'daily-morning' | 'daily-evening' | 'twice-weekly' | 'weekly' | 'manual';
+    digestPreference?:
+      | 'daily-morning'
+      | 'daily-evening'
+      | 'twice-weekly'
+      | 'twice-weekly-tues-fri'
+      | 'weekly'
+      | 'weekly-friday'
+      | 'manual';
   };
   createdAt: Date;
   updatedAt: Date;
@@ -60,7 +67,15 @@ const UserSubscriptionSchema = new Schema<IUserSubscription>({
     },
     digestPreference: {
       type: String,
-      enum: ['daily-morning', 'daily-evening', 'twice-weekly', 'weekly', 'manual'],
+      enum: [
+        'daily-morning',
+        'daily-evening',
+        'twice-weekly',
+        'twice-weekly-tues-fri',
+        'weekly',
+        'weekly-friday',
+        'manual',
+      ],
     },
   },
   createdAt: {

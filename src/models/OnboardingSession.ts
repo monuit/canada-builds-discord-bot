@@ -53,7 +53,7 @@ const OnboardingSessionSchema = new Schema<IOnboardingSession>({
   sessionId: {
     type: String,
     required: true,
-    index: true,
+    unique: true,
   },
   status: {
     type: String,
@@ -86,7 +86,6 @@ const OnboardingSessionSchema = new Schema<IOnboardingSession>({
 });
 
 OnboardingSessionSchema.index({ guildId: 1, userId: 1, status: 1 });
-OnboardingSessionSchema.index({ sessionId: 1 }, { unique: true });
 
 OnboardingSessionSchema.pre('save', function onboardingSessionUpdate(this: IOnboardingSession, next) {
   this.updatedAt = new Date();
